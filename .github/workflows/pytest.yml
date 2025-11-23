@@ -1,12 +1,22 @@
+name: Run Pytest Tests
+
 on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         worker_id: [1, 2, 3, 4]
+
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
