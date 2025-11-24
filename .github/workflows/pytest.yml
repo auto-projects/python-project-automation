@@ -15,6 +15,9 @@ jobs:
         worker_id: [1, 2, 3, 4]
 
     steps:
+      # -------------------------------------------------------
+      # Checkout code
+      # -------------------------------------------------------
       - uses: actions/checkout@v3
 
       # -------------------------------------------------------
@@ -48,9 +51,9 @@ jobs:
           python-version: '3.9'
 
       # -------------------------------------------------------
-      # Install Dependencies
+      # Install Python dependencies
       # -------------------------------------------------------
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
@@ -58,7 +61,7 @@ jobs:
           playwright install --with-deps
 
       # -------------------------------------------------------
-      # Warm up browser (helps avoid flaky first-run failures)
+      # Warm up browser to avoid first-run failures
       # -------------------------------------------------------
       - name: Warm up browser launch
         run: |
@@ -74,16 +77,18 @@ jobs:
           EOF
 
       # -------------------------------------------------------
-      # Parallel Workers Environment
+      # Set environment variables for all workers
       # -------------------------------------------------------
       - name: Set worker environment variables
         run: |
           echo "GITHUB_WORKER_ID=${{ matrix.worker_id }}" >> $GITHUB_ENV
           echo "GITHUB_TOTAL_WORKERS=4" >> $GITHUB_ENV
+          # Set BASE_URL for base-url plugin
+          echo "BASE_URL=https://www.saucedemo.com" >> $GITHUB_ENV
 
       # -------------------------------------------------------
-      # Run Tests
+      # Run Tests (force Chromium, disable warnings)
       # -------------------------------------------------------
       - name: Run Tests
         run: |
-          pytest -vv --browser chromium --maxfail=1 --disable-warnings
+          pytest -vv --browser chromium --maxfail=1 --disable-warnings -m "not nonexistingmarker"
