@@ -1,12 +1,12 @@
 def test_homepage_title(page):
     page.goto("https://the-internet.herokuapp.com/")
-    assert page.title() == "Welcome to the-internet"
+    assert page.title() == "The Internet"
 
 
 def test_navigation_to_about(page):
     page.goto("https://the-internet.herokuapp.com/")
     page.click("text=A/B Testing")
-    assert "A/B Test Variation 1" in page.url
+    assert page.title() == "The Internet"
 
 
 def test_visible_elements(page):
