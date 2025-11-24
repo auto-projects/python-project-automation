@@ -17,40 +17,50 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install system dependencies for Playwright
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libnss3 \
-            libatk1.0-0 \
-            libatk-bridge2.0-0 \
-            libcups2 \
-            libdrm2 \
-            libxkbcommon0 \
-            libxcomposite1 \
-            libxdamage1 \
-            libxrandr2 \
-            libgbm1 \
-            libpango-1.0-0 \
-            libcairo2
-
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
           pip install -r requirements.txt
           pip install playwright pytest-playwright
           playwright install --with-deps
+
+      - name: Warm up browser launch
+        run: |
+          python - << 'EOF'
+          from playwright.sync_api import sync_playwright
+          for _ in range(3):
+              try:
+                  with sync_playwright() as p:
+                      p.chromium.launch()
+                  break
+              except Exception as e:
+                  print("Warm-up attempt failed:", e)
+          EOF
 
       - name: Set worker environment variables
         run: |
           echo "GITHUB_WORKER_ID=${{ matrix.worker_id }}" >> $GITHUB_ENV
           echo "GITHUB_TOTAL_WORKERS=4" >> $GITHUB_ENV
 
-      - name: Run Pytest for this worker slice
-        run: |
-          pytest -vv --maxfail=1 --disable-warnings
+      - name: Run Tests
+        run: pytest -vv --browser chromium --maxfail=1
