@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # -------------------------------------------------------
+      # Cache pip packages
+      # -------------------------------------------------------
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
@@ -25,6 +28,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      # -------------------------------------------------------
+      # Cache Playwright browsers
+      # -------------------------------------------------------
       - name: Cache Playwright browsers
         uses: actions/cache@v3
         with:
@@ -33,17 +39,27 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
 
+      # -------------------------------------------------------
+      # Python Setup
+      # -------------------------------------------------------
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      # -------------------------------------------------------
+      # Install Dependencies
+      # -------------------------------------------------------
+      - name: Install Python dependencies
         run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
           pip install playwright pytest-playwright
           playwright install --with-deps
 
+      # -------------------------------------------------------
+      # Warm up browser (helps avoid flaky first-run failures)
+      # -------------------------------------------------------
       - name: Warm up browser launch
         run: |
           python - << 'EOF'
@@ -54,13 +70,20 @@ jobs:
                       p.chromium.launch()
                   break
               except Exception as e:
-                  print("Warm-up attempt failed:", e)
+                  print("Warm-up failed:", e)
           EOF
 
+      # -------------------------------------------------------
+      # Parallel Workers Environment
+      # -------------------------------------------------------
       - name: Set worker environment variables
         run: |
           echo "GITHUB_WORKER_ID=${{ matrix.worker_id }}" >> $GITHUB_ENV
           echo "GITHUB_TOTAL_WORKERS=4" >> $GITHUB_ENV
 
+      # -------------------------------------------------------
+      # Run Tests (IMPORTANT: add --browser chromium)
+      # -------------------------------------------------------
       - name: Run Tests
-        run: pytest -vv --browser chromium --maxfail=1
+        run: |
+          pytest -vv --browser chromium --maxfail=1 --disable-warnings
