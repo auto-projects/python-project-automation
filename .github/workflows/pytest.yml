@@ -22,10 +22,28 @@ jobs:
         with:
           python-version: '3.9'
 
+      - name: Install system dependencies for Playwright
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 \
+            libatk1.0-0 \
+            libatk-bridge2.0-0 \
+            libcups2 \
+            libdrm2 \
+            libxkbcommon0 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxrandr2 \
+            libgbm1 \
+            libpango-1.0-0 \
+            libcairo2
+
       - name: Install Python dependencies
         run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
-          # Install Playwright browsers + system deps
+          pip install playwright pytest-playwright
           playwright install --with-deps
 
       - name: Set worker environment variables
@@ -34,4 +52,5 @@ jobs:
           echo "GITHUB_TOTAL_WORKERS=4" >> $GITHUB_ENV
 
       - name: Run Pytest for this worker slice
-        run: pytest -v
+        run: |
+          pytest -vv --maxfail=1 --disable-warnings
