@@ -22,15 +22,16 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           pip install -r requirements.txt
-          playwright install
+          # Install Playwright browsers + system deps
+          playwright install --with-deps
 
-      - name: Set worker environment
+      - name: Set worker environment variables
         run: |
           echo "GITHUB_WORKER_ID=${{ matrix.worker_id }}" >> $GITHUB_ENV
           echo "GITHUB_TOTAL_WORKERS=4" >> $GITHUB_ENV
 
-      - name: Run Pytest (parallel slice)
+      - name: Run Pytest for this worker slice
         run: pytest -v
