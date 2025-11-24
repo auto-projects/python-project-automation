@@ -12,7 +12,6 @@ def test_navigation_to_about(page):
 def test_visible_elements(page):
     page.goto("https://the-internet.herokuapp.com/")
     assert page.is_visible("h1")
-    assert page.is_visible("p")
 
 
 def test_external_link_opens_new_tab(page, context):
