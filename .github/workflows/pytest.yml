@@ -82,7 +82,7 @@ jobs:
           echo "GITHUB_TOTAL_WORKERS=4" >> $GITHUB_ENV
 
       # -------------------------------------------------------
-      # Run Tests (IMPORTANT: add --browser chromium)
+      # Run Tests
       # -------------------------------------------------------
       - name: Run Tests
         run: |
