@@ -55,3 +55,12 @@ jobs:
       # -------------------------------------------------------
       - name: Install dependencies
         run: |
+          pip install -r requirements.txt
+          pip install pytest-rerunfailures
+
+      # -------------------------------------------------------
+      # Run tests with retries
+      # -------------------------------------------------------
+      - name: Run pytest tests
+        run: |
+          pytest tests/ --reruns 2 --reruns-delay 5
