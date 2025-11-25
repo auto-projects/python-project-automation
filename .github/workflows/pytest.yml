@@ -6,12 +6,16 @@ on:
       - main
       - dev
   pull_request:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        python-version: [3.9, 3.10]
+        os: [ubuntu-latest, windows-latest]
         worker_id: [1, 2, 3, 4]
 
     steps:
@@ -43,12 +47,12 @@ jobs:
             ${{ runner.os }}-playwright-
 
       # -------------------------------------------------------
-      # Python Setup
+      # Set up Python
       # -------------------------------------------------------
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: ${{ matrix.python-version }}
 
       # -------------------------------------------------------
       # Install dependencies
@@ -57,10 +61,31 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pytest-rerunfailures
+          pip install pytest
 
       # -------------------------------------------------------
-      # Run tests with retries
+      # Run tests with retries and generate JUnit report
       # -------------------------------------------------------
       - name: Run pytest tests
         run: |
-          pytest tests/ --reruns 2 --reruns-delay 5
+          pytest tests/ --reruns 2 --reruns-delay 5 --junitxml=results.xml
+
+      # -------------------------------------------------------
+      # Upload test results
+      # -------------------------------------------------------
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest-results
+          path: results.xml
+
+      # -------------------------------------------------------
+      # Publish test results in GitHub Checks
+      # -------------------------------------------------------
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        with:
+          name: Pytest Results
+          path: results.xml
+          reporter: junit
+          github_token: ${{ secrets.GITHUB_TOKEN }}
