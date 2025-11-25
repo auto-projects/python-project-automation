@@ -40,7 +40,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install playwright pytest-playwright pytest-xdist pytest-split
+          pip install playwright pytest-playwright pytest-split
           playwright install --with-deps
 
       # Warm-up browser
@@ -59,7 +59,7 @@ jobs:
           echo "GITHUB_TOTAL_WORKERS=4" >> $GITHUB_ENV
           echo "BASE_URL=https://www.saucedemo.com" >> $GITHUB_ENV
 
-      # Run sliced tests with fallback
+      # Run sliced tests (NO xdist)
       - name: Run sliced parallel tests
         run: |
           pytest -vv \
@@ -67,7 +67,6 @@ jobs:
             --base-url $BASE_URL \
             --disable-warnings \
             --maxfail=1 \
-            -n auto \
             --splits $GITHUB_TOTAL_WORKERS \
             --group $GITHUB_WORKER_ID \
             --suppress-no-test-exit-code
