@@ -9,6 +9,11 @@ on:
   schedule:
     - cron: '0 0 * * *'  # Daily at midnight UTC
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -20,14 +25,8 @@ jobs:
         worker_id: [1, 2, 3, 4]
 
     steps:
-      # -------------------------------------------------------
-      # Checkout code
-      # -------------------------------------------------------
       - uses: actions/checkout@v3
 
-      # -------------------------------------------------------
-      # Cache pip packages
-      # -------------------------------------------------------
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
@@ -36,9 +35,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # -------------------------------------------------------
-      # Cache Playwright browsers
-      # -------------------------------------------------------
       - name: Cache Playwright browsers
         uses: actions/cache@v3
         with:
@@ -47,41 +43,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
 
-      # -------------------------------------------------------
-      # Set up Python
-      # -------------------------------------------------------
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
-      # -------------------------------------------------------
-      # Install dependencies
-      # -------------------------------------------------------
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-rerunfailures
 
-      # -------------------------------------------------------
-      # Run tests with retries and generate JUnit report
-      # -------------------------------------------------------
       - name: Run pytest tests
         run: |
           pytest tests/ --reruns 2 --reruns-delay 5 --junitxml=results.xml
 
-      # -------------------------------------------------------
-      # Upload test results (per matrix job)
-      # -------------------------------------------------------
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
           name: pytest-results-${{ matrix.os }}-py${{ matrix.python-version }}-worker${{ matrix.worker_id }}
           path: results.xml
 
-      # -------------------------------------------------------
-      # Publish test results in GitHub Checks UI
-      # -------------------------------------------------------
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         with:
