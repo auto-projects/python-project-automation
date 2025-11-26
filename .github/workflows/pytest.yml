@@ -1,18 +1,8 @@
-name: Run Pytest Tests
+name: Test
 
 on:
   push:
-    branches:
-      - main
-      - dev
   pull_request:
-  schedule:
-    - cron: '0 0 * * *'  # Daily at midnight UTC
-
-permissions:
-  contents: read
-  checks: write
-  pull-requests: write
 
 jobs:
   test:
@@ -20,53 +10,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10"]
-        os: [ubuntu-latest, windows-latest]
-        worker_id: [1, 2, 3, 4]
+        python-version: [3.9, 3.10]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
+      - name: Checkout repository
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-rerunfailures
 
-      - name: Run pytest tests
+      # >>> IMPORTANT FIX <<<
+      - name: Install Playwright browsers
         run: |
-          pytest tests/ --reruns 2 --reruns-delay 5 --junitxml=results.xml
+          python -m playwright install
+        shell: bash
 
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-results-${{ matrix.os }}-py${{ matrix.python-version }}-worker${{ matrix.worker_id }}
-          path: results.xml
+      # Linux also needs system deps
+      - name: Install Playwright system deps (Linux only)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          python -m playwright install-deps
 
-      - name: Publish Test Results
-        uses: dorny/test-reporter@v1
-        with:
-          name: Pytest Results - ${{ matrix.os }} - py${{ matrix.python-version }} - worker${{ matrix.worker_id }}
-          path: results.xml
-          reporter: java-junit
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run tests
+        run: |
+          pytest --maxfail=1 --disable-warnings -q --junitxml=results.xml
