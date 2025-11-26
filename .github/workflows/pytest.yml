@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, 3.10]
+        python-version: [3.9, 3.10, 3.11, 3.12]  # ✔ removed invalid 3.1
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
@@ -27,32 +27,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ---------------------------------------------------
-      # FIX: Install Playwright BROWSERS
-      # ---------------------------------------------------
+      # Install Playwright browsers
       - name: Install Playwright browsers
-        run: |
-          python -m playwright install
+        run: python -m playwright install
 
-      # Linux requires extra system deps
+      # Linux-only system package dependencies
       - name: Install Playwright system dependencies (Linux only)
         if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          python -m playwright install-deps
+        run: python -m playwright install-deps
 
-      # ---------------------------------------------------
-      # Run all tests
-      # ---------------------------------------------------
-      - name: Run pytest
-        run: |
-          pytest --maxfail=1 --disable-warnings --junitxml=results.xml
+      - name: Run tests
+        run: pytest --maxfail=1 --disable-warnings --junitxml=results.xml
 
-      # ---------------------------------------------------
-      # Upload test results (optional but recommended)
-      # ---------------------------------------------------
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          # unique name per job to avoid artifact conflict
+          name: test-results-${{ matrix.python-version }}-${{ matrix.os }}
           path: results.xml
+          if-no-files-found: ignore
