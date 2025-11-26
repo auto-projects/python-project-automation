@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -27,18 +27,32 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # >>> IMPORTANT FIX <<<
+      # ---------------------------------------------------
+      # FIX: Install Playwright BROWSERS
+      # ---------------------------------------------------
       - name: Install Playwright browsers
         run: |
           python -m playwright install
-        shell: bash
 
-      # Linux also needs system deps
-      - name: Install Playwright system deps (Linux only)
+      # Linux requires extra system deps
+      - name: Install Playwright system dependencies (Linux only)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           python -m playwright install-deps
 
-      - name: Run tests
+      # ---------------------------------------------------
+      # Run all tests
+      # ---------------------------------------------------
+      - name: Run pytest
         run: |
-          pytest --maxfail=1 --disable-warnings -q --junitxml=results.xml
+          pytest --maxfail=1 --disable-warnings --junitxml=results.xml
+
+      # ---------------------------------------------------
+      # Upload test results (optional but recommended)
+      # ---------------------------------------------------
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: results.xml
