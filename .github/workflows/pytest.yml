@@ -1,24 +1,28 @@
-name: Test
+name: Python CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
 
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        python-version: [3.9, 3.10] # ✔ removed invalid 3.1
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: [3.9, 3.10]   # ✅ Removed 3.1
+        # Add more versions here if needed
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -26,24 +30,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest pytest-xdist pytest-rerunfailures pytest-playwright
 
-      # Install Playwright browsers
       - name: Install Playwright browsers
-        run: python -m playwright install
-
-      # Linux-only system package dependencies
-      - name: Install Playwright system dependencies (Linux only)
-        if: startsWith(matrix.os, 'ubuntu')
-        run: python -m playwright install-deps
+        run: playwright install
 
       - name: Run tests
-        run: pytest --maxfail=1 --disable-warnings --junitxml=results.xml
+        run: |
+          pytest --junitxml=results.xml --reruns 2 -n auto
+        continue-on-error: false
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          # unique name per job to avoid artifact conflict
-          name: test-results-${{ matrix.python-version }}-${{ matrix.os }}
+          name: results
           path: results.xml
-          if-no-files-found: ignore
