@@ -15,3 +15,4 @@
      - ✅ Generates JUnit XML reports for CI/CD artifact collection
      - ✅ Uploads test results as artifacts for later inspection or reporting.
 
+#Codespaces practice
